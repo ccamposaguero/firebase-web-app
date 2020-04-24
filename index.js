@@ -25,14 +25,14 @@ var guestbookListener = null;
 
 // Add Firebase project configuration object here
 const firebaseConfig = {
-    apiKey: "AIzaSyCHBwui7bTqJbyUn-Z47hya0Ps4zDpPQrU",
-    authDomain: "fir-class-c2170.firebaseapp.com",
-    databaseURL: "https://fir-class-c2170.firebaseio.com",
-    projectId: "fir-class-c2170",
-    storageBucket: "fir-class-c2170.appspot.com",
-    messagingSenderId: "683482355510",
-    appId: "1:683482355510:web:1fbcc3faff617f20350597"
-  };
+  apiKey: "AIzaSyCHBwui7bTqJbyUn-Z47hya0Ps4zDpPQrU",
+  authDomain: "fir-class-c2170.firebaseapp.com",
+  databaseURL: "https://fir-class-c2170.firebaseio.com",
+  projectId: "fir-class-c2170",
+  storageBucket: "fir-class-c2170.appspot.com",
+  messagingSenderId: "683482355510",
+  appId: "1:683482355510:web:1fbcc3faff617f20350597"
+};
 
 firebase.initializeApp(firebaseConfig);
 
@@ -45,9 +45,9 @@ const uiConfig = {
   ],
   callbacks: {
     signInSuccessWithAuthResult: function(authResult, redirectUrl){
-      // Handle sign-in.
-      // Return false to avoid redirect.
-      return false;
+    // Handle sign-in.
+    // Return false to avoid redirect.
+    return false;
     }
   }
 };
@@ -55,20 +55,22 @@ const uiConfig = {
 const ui = new firebaseui.auth.AuthUI(firebase.auth());
 
 startRsvpButton.addEventListener("click", ()=> {
-  if (firebase.auth().currentUser){
+  if (firebase.auth().currentUser) {
     firebase.auth().signOut();
   } else {
-    ui.start("#firebaseui-auth-container",  uiConfig);
-  }  
+    ui.start("#firebaseui-auth-container", uiConfig);
+  }
 });
-//{}
+
 firebase.auth().onAuthStateChanged((user)=> {
-  if(user) {
+  if (user) {
     startRsvpButton.textContent = "LOGOUT";
     guestbookContainer.style.display = "block";
+    subscriberGuestbook();
   } else {
     startRsvpButton.textContent = "RSVP";
     guestbookContainer.style.display = "none";
+    unsubscribreGuestbook();
   }
 });
 
@@ -77,12 +79,47 @@ form.addEventListener("submit", (e)=> {
 
   firebase.firestore().collection("guestbook").add({
     text: input.value,
-    tiemstamp: Date.now(),
+    timestamp: Date.now(),
     name: firebase.auth().currentUser.displayName,
     userId: firebase.auth().currentUser.uid
   });
 
-  input.nodeValue = "";
+  input.value = "";
   return false;
 });
+function subscriberGuestbook(){
+guestbookListener = firebase.firestore().collection("guestbook").orderBy("timestamp", "desc")
+.onSnapshot((snaps) => {
+  guestbook.innerHTML = "";
+  snaps.forEach((doc)=>{
+    const entry = document.createElement("p");
+    entry.textContent = doc.data().name + ": " + doc.data().text;
+    guestbook.appendChild(entry);
+  });
+})
+};
 
+function unsubscribreGuestbook(){
+  if(guestbookListener != null){
+    guestbookListener();
+    guestbookListener = null;
+  }
+};
+
+rsvpYes.onclick = () => {
+  const userDoc = firebase.firestore().collection("attendees").doc(firebase.auth().currentUser.uid);
+  userDoc.set({
+    attending: true
+  }).catch(console.error);
+};
+rsvpNo.onclick = () => {
+  const userDoc = firebase.firestore().collection("attendees").doc(firebase.auth().currentUser.uid);
+  userDoc.set({
+    attending: false
+  }).catch(console.error);
+};
+
+firebase.firestore().collection("attendees").where("attending", "==", true).onSnapshot((snap)=>{
+  const newAttendeeCount = snap.docs.length;
+  numberAttending.innerHTML = newAttendeeCount + " people going";
+});
