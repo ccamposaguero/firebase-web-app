@@ -67,10 +67,12 @@ firebase.auth().onAuthStateChanged((user)=> {
     startRsvpButton.textContent = "LOGOUT";
     guestbookContainer.style.display = "block";
     subscriberGuestbook();
+    subscribeCurrentRSVP(user);
   } else {
     startRsvpButton.textContent = "RSVP";
     guestbookContainer.style.display = "none";
     unsubscribreGuestbook();
+    unsusbcrieCurrentRSVP();
   }
 });
 
@@ -123,3 +125,29 @@ firebase.firestore().collection("attendees").where("attending", "==", true).onSn
   const newAttendeeCount = snap.docs.length;
   numberAttending.innerHTML = newAttendeeCount + " people going";
 });
+
+function subscribeCurrentRSVP(user){
+  rsvpListener = firebase.firestore().collection("attendees").doc(user.uid).onSnapshot((doc) => {
+    if (doc && doc.data()){
+      const attendingResponse = doc.data().attending;
+
+      if(attendingResponse){
+        rsvpYes.className = "clicked";
+        rsvpNo.className = "";
+      } else {
+        rsvpYes.className = "";
+        rsvpNo.className = "clicked";
+      }
+    }
+  });
+
+  function unsusbcrieCurrentRSVP(){
+    if(rsvpListener != null){
+      rsvpListener();
+      rsvpListener = null;
+    }
+
+    rsvpYes.className = "";
+    rsvpNo.className = "";
+  }
+};
